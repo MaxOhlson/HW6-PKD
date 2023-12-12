@@ -1,0 +1,262 @@
+// DATA SPECIFICATION AND EXAMPLES
+/**
+ * A {Student} is an array consisting of a NIN (National Identification Number) at index 0 and GPA (Grade Point Average) at index 1.
+ * Invariant: NIN must be a string of 10 digits at index 0, and GPA must be a number at index 1.
+ * @example const S1 = ["0101010101", 4.0];
+ */
+
+/** A {Course} is an array where the first element is the course code, the second is its name, the third is an array of enrolled students, and the fourth is an array of waiting students.
+ * Invariant: The first element must be a string (course code), the second must be a string (course name), the third must be an array (enrolled students), and the fourth must be an array (waiting list).
+ * @example const course1 = ["1DL201", "Programkonstruktion och Datastrukturer", [S1, S2], []];
+ */
+
+/**
+ * Insert an element at a specific index in an array.
+ * @param {number} index - The index at which to insert the element.
+ * @param {any} element - The element to insert.
+ * @param {Array} arr - The array in which to insert the element.
+ * @modifies {Array} - The array becomes modified by insertion of element at index.
+ */
+function insert(index, element, arr) {
+    if (is_array(element)) {
+        // If the element is an array, insert it directly
+        for (let i = array_length(arr); i > index; i = i - 1) {
+            arr[i] = arr[i - 1];
+        }
+        arr[index] = element;
+    } else {
+        // If the element is not an array, wrap it in an array before inserting
+        for (let i = array_length(arr); i > index; i = i - 1) {
+            arr[i] = arr[i - 1];
+        }
+        arr[index] = [element[0], element[1]];
+    }
+}
+
+/**
+ * Find the index of an element in an array.
+ * @param {Array} arr - The array to search.
+ * @param {any} elem - The element to find.
+ * @returns {number} - The index of the element, or -1 if not found.
+ */
+function findIndex(arr, elem) {
+    for (let i = 0; i < array_length(arr); i = i + 1) {
+        // Check if both elements are arrays
+        if (is_array(arr[i]) && is_array(elem)) {
+            if (arr[i][0] === elem[0]) {
+                return i;
+            }
+        } else if (!is_array(arr[i]) && !is_array(elem)) {
+            // Check if both elements are numbers
+            if (arr[i] === elem) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+/**
+ * Quicksort algorithm to sort students by GPA in descending order.
+ * @param {Array} arr - The array to be sorted.
+ * @param {number} low - The starting index.
+ * @param {number} high - The ending index.
+ * @returns {Array} - The sorted array.
+ */
+function quicksort(arr, low, high) {
+    if (low < high) {
+        const partitionIndex = partition(arr, low, high);
+        quicksort(arr, low, partitionIndex - 1);
+        quicksort(arr, partitionIndex + 1, high);
+    }
+    return arr;
+}
+
+/**
+ * Partition function for quicksort.
+ * @param {Array} arr - The array to be partitioned.
+ * @param {number} low - The starting index.
+ * @param {number} high - The ending index.
+ * @returns {number} - The partition index.
+ */
+function partition(arr, low, high) {
+    const pivot = arr[high][1]; // Assuming index 1 corresponds to GPA
+    let i = low - 1;
+
+    for (let j = low; j < high; j = j + 1) {
+        if (arr[j][1] >= pivot) { // Assuming index 1 corresponds to GPA
+            i = i + 1;
+            const temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+    }
+    const temp = arr[i + 1];
+    arr[i + 1] = arr[high];
+    arr[high] = temp;
+
+    return i + 1;
+}
+
+/**
+ * Apply a student to a course. If there's space, add the student to the course, otherwise, add the student to the waiting list.
+ * @param {Array} course - The course information.
+ * @param {Array} student - The student to apply.
+ * @returns {string} - "Enrolled" if the student is enrolled, "Waiting List" if added to the waiting array, "Already Enrolled" if the student is already enrolled.
+ * @modifies {Array} - Modifies course by adding student to enrolled students or waiting array
+ */
+function apply(course, student) {
+    const enrolledStudents = course[2];
+    const waitingList = course[3];
+    let isEnrolled = false;
+    for (let i = 0; i < array_length(enrolledStudents); i = i + 1) {
+        if (enrolledStudents[i][0] === student[0]) { // Assuming index 0 corresponds to NIN
+            isEnrolled = true;
+            break;
+        }
+    }
+    if (isEnrolled) {
+        return "Already Enrolled";
+    }
+    const courseSlots = array_length(enrolledStudents);
+    if (courseSlots < 5) {
+        enrolledStudents[array_length(enrolledStudents)] = student;
+        return "Enrolled";
+    } else {
+        let i = 0;
+        while (i < array_length(waitingList) && waitingList[i][1] > student[1]) { // Assuming index 1 corresponds to GPA
+            i = i + 1;
+        }
+        insert(i, student, waitingList);
+        return "Waiting List";
+    }
+}
+
+/**
+ * Withdraw a student from a course.
+ * If there's a student on the waiting array, fill the empty slot in enrolled students with the first person on the waiting array.
+ * @param {Array} course - The course information.
+ * @param {Array} student - The student to withdraw.
+ * @returns {string} - "Withdrawn" if the student is successfully withdrawn, "Not Enrolled" if the student is not enrolled in the course.
+ * @modifies {Array} - Modifies course by withdrawing the student and filling empty slots with students from the waiting array.
+ */
+function withdraw(course, student) {
+    const enrolledStudents = course[2];
+    const waitingList = course[3];
+    const indexInEnrolled = findIndex(enrolledStudents, student);
+
+    if (indexInEnrolled !== -1) {
+        for (let i = indexInEnrolled; i < array_length(enrolledStudents) - 1; i = i + 1) {
+            enrolledStudents[i] = enrolledStudents[i + 1];
+        }
+        enrolledStudents[array_length(enrolledStudents) - 1] = 0;
+        if (array_length(waitingList) > 0) {
+            const firstPersonOnWaitingList = waitingList[0];
+            enrolledStudents[array_length(enrolledStudents) - 1] = firstPersonOnWaitingList;
+            for (let i = 0; i < array_length(waitingList) - 1; i = i + 1) {
+                waitingList[i] = waitingList[i + 1];
+            }
+            waitingList[array_length(waitingList) - 1] = 0;
+        }
+        return "Withdrawn";
+    } else {
+        return "Not Enrolled";
+    }
+}
+
+/**
+ * Remove the first element from an array.
+ * @param {Array} arr - The array from which to remove the first element.
+ * @returns {Array} - The array with the first element removed.
+ */
+function removeFirstElement(arr) {
+    const newArr = [];
+    for (let i = 1; i < array_length(arr); i = i + 1) {
+        newArr[i - 1] = arr[i];
+    }
+    return newArr;
+}
+
+/**
+ * Remove an element at a specific index in an array.
+ * @param {number} index - The index at which to remove the element.
+ * @param {Array} arr - The array from which to remove the element.
+ * @returns {Array} - The array with the element removed.
+ */
+function removeElementAtIndex(index, arr) {
+    const newArr = [];
+    for (let i = 0; i < index; i = i + 1) {
+        newArr[i] = arr[i];
+    }
+    for (let i = index + 1; i < array_length(arr); i = i + 1) {
+        newArr[i - 1] = arr[i];
+    }
+    return newArr;
+}
+/**
+ * Admit students with the highest GPAs to a course.
+ * @param {Array} course - The course information.
+ * @param {Array} applicants - The array of student applicants.
+ * @returns {Array} - The array of students admitted to the course.
+ * @modifies {Array} - Modifies course by admitting students and updating the waiting list.
+ */
+function admit(course, applicants) {
+    let waitingList = course[3];
+    const admittedStudents = [];
+
+    // Sort applicants by GPA in descending order
+    applicants = quicksort(applicants, 0, array_length(applicants) - 1);
+
+    // Admit students with the highest GPAs until the course is full
+    const availableSlots = 5;
+    for (let i = 0; i < availableSlots && array_length(applicants) > 0; i = i + 1) {
+        let highestGPAIndex = 0;
+
+        // Find the index of the applicant with the highest GPA
+        for (let j = 1; j < array_length(applicants); j = j + 1) {
+            if (applicants[j][1] > applicants[highestGPAIndex][1]) {
+                highestGPAIndex = j;
+            }
+        }
+
+        // Admit the student with the highest GPA
+        admittedStudents[array_length(admittedStudents)] = applicants[highestGPAIndex];
+
+        // Remove the admitted student from the applicants list
+        applicants = removeElementAtIndex(highestGPAIndex, applicants);
+    }
+
+    // Place remaining applicants in the waiting list
+    while (array_length(applicants) > 0) {
+        waitingList[array_length(waitingList)] = [applicants[0][0], applicants[0][1]];
+
+        // Remove the placed student from the applicants list
+        applicants = removeFirstElement(applicants);
+    }
+
+    // Update the waiting list in the course
+    course[3] = waitingList;
+
+    return admittedStudents;
+}
+// Test data
+const S1 = ["0101010101", 4.0];
+const S2 = ["0101010102", 3.8];
+const S3 = ["0101010103", 3.5];
+const S4 = ["0101010104", 3.9];
+const S5 = ["0101010105", 3.7];
+const S6 = ["0101010106", 4.2];
+
+// Course information
+const course1 = ["1DL201", "Programkonstruktion och Datastrukturer", [], []];
+
+// Applicants array with 6 students
+const applicants = [S1, S2, S3, S4, S5, S6];
+
+// Admit students
+const admittedStudents = admit(course1, applicants);
+
+// Display admitted students and waiting list
+display(admittedStudents);
+
+
