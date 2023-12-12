@@ -1,0 +1,129 @@
+// DATA SPECIFICATION AND EXAMPLES
+/**
+ * A {Student} is a string, the string is that person's NIN
+ * Invariant: Must be a string of a non-negative consisting of 10 numbers 
+ * @example const S1 = "0101010101" 
+ */
+/** A {Course} is an array where the first element is the course code, the second is its name, the third is an array of enrolled students, and the fourth is an array of waiting student.
+ * Invariant: The first element must be a string (course code), the second must be a string (course name), the third must be an array (enrolled students), and the fourth must be an array (waiting list).
+ * @example const course1 = ["1DL201", "Programkonstruktion och Datastrukturer", [S1, S2], []] ;
+ */
+
+/**
+ * Insert an element at a specific index in an array.
+ * @param {number} index - The index at which to insert the element.
+ * @param {any} element - The element to insert.
+ * @param {Array} arr - The array in which to insert the element.
+ * @modifies {Array} - The array becomes modified by insertion of element at index
+ */
+function insert(index, element, arr) {
+    for (let i = array_length(arr); i > index; i = i - 1) {
+        arr[i] = arr[i - 1];
+    }
+    arr[index] = element;
+}
+
+/**
+ * Find the index of an element in an array.
+ * @param {Array} arr - The array to search.
+ * @param {any} elem - The element to find.
+ * @returns {number} - The index of the element, or -1 if not found.
+ */
+function findIndex(arr, elem) {
+    for (let i = 0; i < array_length(arr); i = i + 1) {
+        if (arr[i] === elem) {
+            return i;
+        }
+    }
+    return -1;
+}
+/**
+ * Apply a student to a course. If there's space, add the student to the course, otherwise, add the student to the waiting list.
+ * @param {Array} course - The course information.
+ * @param {string} student - The student to apply.
+ * @returns {string} - "Enrolled" if the student is enrolled, "Waiting List" if added to the waiting array, "Already Enrolled" if the student is already enrolled.
+ * @modifies {Array} - Modifies course by adding student to enrolled students or waiting array
+ */
+function apply(course, student) {
+    const enrolledStudents = course[2];
+    const waitingList = course[3];
+    let isEnrolled = false;
+    for (let i = 0; i < array_length(enrolledStudents); i = i + 1) {
+        if (enrolledStudents[i] === student) {
+            isEnrolled = true;
+            break;
+        }
+    }
+    if (isEnrolled) {
+        return "Already Enrolled";
+    }
+    const courseSlots = array_length(enrolledStudents);
+    if (courseSlots < 5) {
+        enrolledStudents[array_length(enrolledStudents)] = student;
+        return "Enrolled";
+    } else {
+        let i = 0;
+        while (i < array_length(waitingList) && waitingList[i] < student) {
+            i = i + 1;
+        }
+        insert(i, student, waitingList);
+        return "Waiting List";
+    }
+}
+
+/**
+ * Withdraw a student from a course.
+ * If there's a student on the waiting array, fill the empty slot in enrolled students with the first person on the waiting array.
+ * @param {Array} course - The course information.
+ * @param {string} student - The student to withdraw.
+ * @returns {string} - "Withdrawn" if the student is successfully withdrawn, "Not Enrolled" if the student is not enrolled in the course.
+ * @modifies {Array} - Modifies course by withdrawing the student and filling empty slots with students from the waiting array.
+ */
+function withdraw(course, student) {
+    const enrolledStudents = course[2];
+    const waitingList = course[3];
+    const indexInEnrolled = findIndex(enrolledStudents, student);
+
+    if (indexInEnrolled !== -1) {
+        for (let i = indexInEnrolled; i < array_length(enrolledStudents) - 1; i = i + 1) {
+            enrolledStudents[i] = enrolledStudents[i + 1];
+        }
+        enrolledStudents[array_length(enrolledStudents) - 1] = 0;
+        if (array_length(waitingList) > 0) {
+            const firstPersonOnWaitingList = waitingList[0];
+            enrolledStudents[array_length(enrolledStudents) - 1] = firstPersonOnWaitingList;
+            for (let i = 0; i < array_length(waitingList) - 1; i = i + 1) {
+                waitingList[i] = waitingList[i + 1];
+            }
+            waitingList[array_length(waitingList) - 1] = 0;
+        }
+        return "Withdrawn";
+    } else {
+        return "Not Enrolled";
+    }
+}
+
+
+
+// Example data
+const S1 = "0101010101";
+const S2 = "0101010102";
+const S3 = "0101010103";
+const S4 = "0101010104";
+const S5 = "0101010105";
+const S6 = "0101010106";
+const course1 = ["1DL201", "Programkonstruktion och Datastrukturer", [S1, S2], []];
+const current_PKD = course1;
+
+// Testing 
+display(withdraw(current_PKD, S5)); // Not enrolled
+display(apply(current_PKD, S2)); // Already Enrolled
+display(apply(current_PKD, S4)); // Enrolled
+display(apply(current_PKD, S3)); // Enrolled
+display(apply(current_PKD, S5)); // Enrolled
+display(apply(current_PKD, S1)); // Already Enrolled
+display(apply(current_PKD, S6)); // Waiting List
+display(current_PKD); // Check the state of the course
+display(withdraw(current_PKD,S2)); // Withdraws S2 and modifies both arrays accordingly
+display(current_PKD);// Empty waiting list since one person from the waiting array was moved to the enrolled array
+
